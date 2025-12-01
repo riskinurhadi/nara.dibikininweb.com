@@ -398,23 +398,15 @@
             return pre.outerHTML;
         });
 
-        // 2. Deteksi kode inline (dikelilingi oleh `) - sebelum bold/italic
+        // 2. Deteksi kode inline (dikelilingi oleh `) 
         const inlineCodeRegex = /`([^`\n]+)`/g;
         text = text.replace(inlineCodeRegex, '<code class="inline-code">$1</code>');
 
-        // 3. Bold (teks di antara **) - sederhana dan bersih
-        // Hanya tangkap teks yang tidak mengandung tanda petik atau backtick
-        const boldRegex = /\*\*([^*`']+?)\*\*/g;
-        text = text.replace(boldRegex, '<strong>$1</strong>');
-
-        // 4. Italic (teks di antara *) - skip jika sudah dalam code block, inline code, atau sudah diproses sebagai bold
-        // Hanya proses jika tidak ada ** di sekitarnya dan tidak dalam code block
-        const italicRegex = /(?<!<code[^>]*>)(?<!\*)\*([^*\n`]+?)\*(?!\*)(?!<\/code>)/g;
-        text = text.replace(italicRegex, '<em>$1</em>');
-
-        // 5. Daftar (diawali dengan *, -, atau angka)
+        // 3. Daftar (diawali dengan *, -, atau angka)
         const listRegex = /(\* |\- |\d+\. ).*/g;
         text = text.replace(listRegex, '<ul>$&</ul>');
+        
+        // Catatan: Bold dan Italic dihilangkan untuk tampilan yang lebih bersih
         
         return text;
     }
