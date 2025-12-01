@@ -38,6 +38,7 @@ function askGemini($question, $apiKey) {
     $jsonData = json_encode($data);
 
     // Mencoba setiap model sampai berhasil
+    $errors = [];
     foreach ($models as $model) {
         $apiUrl = 'https://generativelanguage.googleapis.com/' . $model . ':generateContent?key=' . $apiKey;
 
@@ -56,6 +57,7 @@ function askGemini($question, $apiKey) {
 
         // Penanganan jika terjadi error koneksi
         if ($error) {
+            $errors[] = $model . ": Connection error - " . $error;
             continue; // Coba model berikutnya
         }
 
@@ -65,18 +67,32 @@ function askGemini($question, $apiKey) {
 
             // Cek jika response adalah error dari API
             if (isset($result['error'])) {
+                $errorMsg = $result['error']['message'] ?? 'Unknown error';
+                $errors[] = $model . ": API error - " . $errorMsg;
                 continue; // Coba model berikutnya
             }
 
             // Mengekstrak teks jawaban dari respons JSON Gemini yang kompleks
             if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
                 return $result['candidates'][0]['content']['parts'][0]['text'];
+            } else {
+                // Response tidak memiliki struktur yang diharapkan
+                $errors[] = $model . ": Invalid response structure";
             }
+        } else {
+            // HTTP code bukan 200
+            $result = json_decode($response, true);
+            $errorMsg = 'HTTP ' . $httpCode;
+            if (isset($result['error']['message'])) {
+                $errorMsg .= ' - ' . $result['error']['message'];
+            }
+            $errors[] = $model . ": " . $errorMsg;
         }
     }
 
-    // Jika semua model gagal, kembalikan error
-    return "Maaf, saat ini saya tidak bisa menjawab. Semua model yang tersedia tidak dapat diakses. Silakan coba lagi nanti atau hubungi administrator.";
+    // Jika semua model gagal, kembalikan error dengan detail
+    $errorDetails = implode(' | ', $errors);
+    return "Maaf, saat ini saya tidak bisa menjawab. Error details: " . $errorDetails;
 }
 
 
