@@ -57,14 +57,16 @@ html, body {
     display: flex;
     flex-direction: column;
     align-items: center;
-    justify-content: center;
+    justify-content: flex-start;
     padding: 20px;
+    padding-bottom: 100px;
     position: relative;
 }
 
 /* === Welcome Section === */
 .welcome-section {
     text-align: center;
+    margin-top: 60px;
     margin-bottom: 40px;
     z-index: 10;
 }
@@ -105,8 +107,12 @@ html, body {
 .chat-input-container {
     width: 100%;
     max-width: 900px;
-    position: relative;
+    position: fixed;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
     z-index: 10;
+    padding: 0 20px;
 }
 
 .chat-input-bar {
@@ -186,21 +192,25 @@ html, body {
 .chat-wrapper {
     width: 100%;
     max-width: 900px;
-    height: 60vh;
-    margin-bottom: 20px;
+    height: calc(100vh - 180px);
+    margin-top: 20px;
+    margin-bottom: 120px;
     overflow-y: auto;
     padding: 20px;
+    padding-bottom: 40px;
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    gap: 0;
 }
 
 .chat-message {
     padding: 15px 20px;
     border-radius: 20px;
-    max-width: 80%;
+    max-width: 75%;
     word-wrap: break-word;
     animation: fadeIn 0.3s ease;
+    margin-top: 12px;
+    margin-bottom: 12px;
 }
 
 @keyframes fadeIn {
@@ -216,10 +226,12 @@ html, body {
 
 .user-message {
     align-self: flex-end;
-    background: var(--glass-bg);
+    background: rgba(59, 130, 246, 0.3);
     backdrop-filter: blur(20px);
-    border: 1px solid var(--glass-border);
+    border: 1px solid rgba(59, 130, 246, 0.4);
     color: var(--text-primary);
+    border-bottom-right-radius: 5px;
+    margin-left: auto;
 }
 
 .bot-message {
@@ -228,6 +240,8 @@ html, body {
     backdrop-filter: blur(20px);
     border: 1px solid var(--glass-border);
     color: var(--text-primary);
+    border-bottom-left-radius: 5px;
+    margin-right: auto;
 }
 
 .typing-indicator {

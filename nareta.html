@@ -55,20 +55,6 @@
         <div class="chat-input-container">
             <div class="chat-input-bar">
                 <input type="text" id="user-input" placeholder="Ask anything..." autocomplete="off">
-                <button class="btn-glass" id="mic-button" title="Voice Input">
-                    <i class="fas fa-microphone"></i>
-                </button>
-                <button class="btn-glass" id="deep-search-button">
-                    <i class="fas fa-search"></i>
-                    <span>Deep search</span>
-                </button>
-                <button class="btn-glass" id="search-button">
-                    <i class="fas fa-globe"></i>
-                    <span>Search</span>
-                </button>
-                <button class="btn-glass" id="sound-button" title="Sound Settings">
-                    <i class="fas fa-waveform-lines"></i>
-                </button>
                 <button class="btn-send" id="send-button" title="Send">
                     <i class="fas fa-arrow-up"></i>
                 </button>
@@ -253,22 +239,6 @@
             }
         });
 
-        // Placeholder buttons (can be implemented later)
-        document.getElementById('mic-button').addEventListener('click', () => {
-            console.log('Voice input clicked');
-        });
-
-        document.getElementById('deep-search-button').addEventListener('click', () => {
-            console.log('Deep search clicked');
-        });
-
-        document.getElementById('search-button').addEventListener('click', () => {
-            console.log('Search clicked');
-        });
-
-        document.getElementById('sound-button').addEventListener('click', () => {
-            console.log('Sound settings clicked');
-        });
 
         // === PWA Service Worker Registration ===
         if ('serviceWorker' in navigator) {
