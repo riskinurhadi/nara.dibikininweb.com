@@ -423,7 +423,7 @@ $knowledgeBase = [
 
 // **MASUKKAN API KEY ANDA DI SINI**
 // Ambil dari https://aistudio.google.com/
-$geminiApiKey = 'AIzaSyCj1Hbt4Aceyd32bkkjLnhup6wRHluT0xs';
+$geminiApiKey = 'AIzaSyD_M2YiWYn-evcqbSsMdUVt_Ay0NZOv_a4';
 
 $reply = null;
 $answerFound = false;
