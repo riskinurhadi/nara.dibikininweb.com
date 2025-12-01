@@ -15,7 +15,8 @@ header('Content-Type: application/json');
  * @return string Jawaban dari Gemini atau pesan error.
  */
 function askGemini($question, $apiKey) {
-    $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' . $apiKey;
+    // Menggunakan endpoint v1 yang lebih stabil
+    $apiUrl = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash:generateContent?key=' . $apiKey;
 
     // Prompt ini memberikan 'kepribadian' dan konteks pada Nareta saat bertanya ke Gemini
     $prompt = "Kamu adalah Nareta, asisten AI dari rnara.id yang sangat ramah, membantu, dan cerdas. Jawab pertanyaan berikut menggunakan bahasa Indonesia yang natural, jelas, dan jika memungkinkan, berikan jawaban dalam format yang mudah dibaca (misalnya dengan poin-poin jika perlu). Pertanyaannya adalah: \"" . $question . "\"";
@@ -37,22 +38,40 @@ function askGemini($question, $apiKey) {
     curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
     curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
     curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYHOST, 2);
     // Tambahkan timeout untuk mencegah script menunggu terlalu lama
     curl_setopt($ch, CURLOPT_TIMEOUT, 30); 
 
     $response = curl_exec($ch);
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $curlErrorNo = curl_errno($ch);
     $error = curl_error($ch);
     curl_close($ch);
 
     // Penanganan jika terjadi error koneksi
-    if ($error) {
-        return "Maaf, terjadi sedikit gangguan saat mencoba terhubung ke AI. Silakan coba lagi nanti.";
+    if ($response === false || $curlErrorNo !== 0) {
+        $errorMsg = "Maaf, terjadi gangguan saat mencoba terhubung ke AI.";
+        if ($error) {
+            $errorMsg .= " Error: " . $error . " (Code: " . $curlErrorNo . ")";
+        }
+        return $errorMsg;
     }
 
-    // Cek HTTP status code
+    // Cek HTTP status code dan berikan informasi lebih detail
     if ($httpCode !== 200) {
-        return "Maaf, terjadi kesalahan saat menghubungi AI. Silakan coba lagi nanti.";
+        $result = json_decode($response, true);
+        $errorMessage = 'Unknown error';
+        
+        if (isset($result['error'])) {
+            $errorMessage = $result['error']['message'] ?? 'Unknown error';
+            if (isset($result['error']['status'])) {
+                $errorMessage .= ' (Status: ' . $result['error']['status'] . ')';
+            }
+        }
+        
+        // Untuk debugging - tampilkan informasi error yang lebih detail
+        return "Maaf, terjadi kesalahan saat menghubungi AI. HTTP Code: " . $httpCode . ". Error: " . $errorMessage;
     }
 
     $result = json_decode($response, true);
@@ -68,6 +87,10 @@ function askGemini($question, $apiKey) {
         return $result['candidates'][0]['content']['parts'][0]['text'];
     } else {
         // Penanganan jika API mengembalikan error (misal: pertanyaan tidak aman, dll)
+        // Untuk debugging - tampilkan response untuk melihat strukturnya
+        if (empty($result)) {
+            return "Maaf, saat ini saya tidak bisa menjawab. Response kosong dari API.";
+        }
         return "Maaf, saat ini saya tidak bisa menjawab. Mungkin ada kata kunci yang melanggar kebijakan keamanan atau limit harian API habis. Coba tanyakan hal lain ya.";
     }
 }
