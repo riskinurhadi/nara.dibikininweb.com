@@ -114,11 +114,20 @@
             }
 
             chatBody.appendChild(messageDiv);
-            scrollToBottom();
+            // Scroll dengan smooth behavior setelah DOM diupdate
+            setTimeout(() => {
+                scrollToBottom();
+            }, 100);
         }
 
         function scrollToBottom() {
-            chatBody.scrollTop = chatBody.scrollHeight;
+            const chatWrapper = document.getElementById('chat-wrapper');
+            if (chatWrapper) {
+                chatWrapper.scrollTo({
+                    top: chatWrapper.scrollHeight,
+                    behavior: 'smooth'
+                });
+            }
         }
 
         function startChatSession() {
@@ -198,7 +207,9 @@
             typingIndicator.classList.add('typing-indicator');
             typingIndicator.textContent = 'Nareta sedang mengetik...';
             chatBody.appendChild(typingIndicator);
-            scrollToBottom();
+            setTimeout(() => {
+                scrollToBottom();
+            }, 100);
 
             fetch('php/chatbot.php', {
                 method: 'POST',
@@ -216,6 +227,10 @@
             .then(data => {
                 chatBody.removeChild(typingIndicator);
                 appendMessage(data.reply, 'bot-message');
+                // Scroll otomatis setelah pesan ditambahkan (delay lebih lama untuk memastikan DOM terupdate)
+                setTimeout(() => {
+                    scrollToBottom();
+                }, 400);
             })
             .catch(error => {
                 console.error('Error:', error);

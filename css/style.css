@@ -40,6 +40,9 @@ html, body {
     background: linear-gradient(180deg, var(--bg-gradient-start) 0%, var(--bg-gradient-end) 100%);
     color: var(--text-primary);
     overflow-x: hidden;
+    overflow-y: hidden;
+    position: fixed;
+    width: 100%;
 }
 
 /* === Glassmorphism Effect === */
@@ -197,11 +200,14 @@ html, body {
     margin-top: 20px;
     margin-bottom: 80px;
     overflow-y: auto;
+    overflow-x: hidden;
     padding: 20px;
     padding-bottom: 20px;
     display: flex;
     flex-direction: column;
     gap: 0;
+    position: relative;
+    -webkit-overflow-scrolling: touch;
 }
 
 .chat-message {
@@ -382,6 +388,12 @@ html, body {
         font-size: 1rem;
     }
     
+    .chat-wrapper {
+        margin-top: 60px;
+        height: calc(100vh - 160px);
+        padding-top: 20px;
+    }
+    
     .chat-input-bar {
         flex-wrap: wrap;
         padding: 10px 15px;
@@ -398,6 +410,10 @@ html, body {
     
     .chat-message {
         max-width: 90%;
+    }
+    
+    .main-container {
+        padding-top: 40px;
     }
 }
 
@@ -416,6 +432,12 @@ html, body {
         font-size: 1.5rem;
     }
     
+    .chat-wrapper {
+        margin-top: 80px;
+        height: calc(100vh - 180px);
+        padding-top: 30px;
+    }
+    
     .chat-input-bar {
         border-radius: 25px;
     }
@@ -429,6 +451,10 @@ html, body {
     
     .theme-toggle span {
         display: none;
+    }
+    
+    .main-container {
+        padding-top: 60px;
     }
 }
 
