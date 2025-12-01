@@ -41,6 +41,7 @@ function askGemini($question, $apiKey) {
     curl_setopt($ch, CURLOPT_TIMEOUT, 30); 
 
     $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $error = curl_error($ch);
     curl_close($ch);
 
@@ -49,11 +50,22 @@ function askGemini($question, $apiKey) {
         return "Maaf, terjadi sedikit gangguan saat mencoba terhubung ke AI. Silakan coba lagi nanti.";
     }
 
-    $result = json_decode($response);
+    // Cek HTTP status code
+    if ($httpCode !== 200) {
+        return "Maaf, terjadi kesalahan saat menghubungi AI. Silakan coba lagi nanti.";
+    }
+
+    $result = json_decode($response, true);
+
+    // Cek jika response adalah error dari API
+    if (isset($result['error'])) {
+        $errorMessage = $result['error']['message'] ?? 'Unknown error';
+        return "Maaf, terjadi kesalahan: " . $errorMessage . ". Silakan coba lagi nanti.";
+    }
 
     // Mengekstrak teks jawaban dari respons JSON Gemini yang kompleks
-    if (isset($result->candidates[0]->content->parts[0]->text)) {
-        return $result->candidates[0]->content->parts[0]->text;
+    if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
+        return $result['candidates'][0]['content']['parts'][0]['text'];
     } else {
         // Penanganan jika API mengembalikan error (misal: pertanyaan tidak aman, dll)
         return "Maaf, saat ini saya tidak bisa menjawab. Mungkin ada kata kunci yang melanggar kebijakan keamanan atau limit harian API habis. Coba tanyakan hal lain ya.";
@@ -412,10 +424,10 @@ foreach ($knowledgeBase as $item) {
 // 2. Jika TIDAK ada jawaban di knowledge base lokal, TANYAKAN KE GEMINI!
 // Blok fallback yang panjang dengan puluhan 'elseif' kini digantikan oleh ini.
 if (!$answerFound) {
-    // Cek apakah API key sudah diisi
-    if (empty($geminiApiKey) || $geminiApiKey === 'AIzaSyCj1Hbt4Aceyd32bkkjLnhup6wRHluT0xs') {
-    $reply = "Maaf, koneksi ke AI eksternal belum dikonfigurasi. Silakan periksa variabel \$geminiApiKey.";
-} else {
+    // Cek apakah API key sudah diisi (bukan kosong dan bukan placeholder)
+    if (empty($geminiApiKey) || $geminiApiKey === 'YOUR_API_KEY_HERE' || trim($geminiApiKey) === '') {
+        $reply = "Maaf, koneksi ke AI eksternal belum dikonfigurasi. Silakan periksa variabel \$geminiApiKey.";
+    } else {
         // Panggil fungsi yang sudah kita buat di atas
         $reply = askGemini($userMessage, $geminiApiKey);
     }
