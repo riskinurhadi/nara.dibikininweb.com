@@ -15,7 +15,8 @@ header('Content-Type: application/json');
  * @return string Jawaban dari Gemini atau pesan error.
  */
 function askGemini($question, $apiKey) {
-    $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash-latest:generateContent?key=' . $apiKey;
+    // Menggunakan model gemini-1.5-flash yang lebih stabil (tanpa -latest)
+    $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . $apiKey;
 
     // Prompt ini memberikan 'kepribadian' dan konteks pada Nareta saat bertanya ke Gemini
     $prompt = "Kamu adalah Nareta, asisten AI dari rnara.id yang sangat ramah, membantu, dan cerdas. Jawab pertanyaan berikut menggunakan bahasa Indonesia yang natural, jelas, dan jika memungkinkan, berikan jawaban dalam format yang mudah dibaca (misalnya dengan poin-poin jika perlu). Pertanyaannya adalah: \"" . $question . "\"";
