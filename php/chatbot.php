@@ -15,8 +15,13 @@ header('Content-Type: application/json');
  * @return string Jawaban dari Gemini atau pesan error.
  */
 function askGemini($question, $apiKey) {
-    // Menggunakan model gemini-1.5-flash yang lebih stabil (tanpa -latest)
-    $apiUrl = 'https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=' . $apiKey;
+    // Daftar model yang akan dicoba secara berurutan
+    $models = [
+        'v1beta/models/gemini-pro',           // Model paling umum dan stabil
+        'v1/models/gemini-pro',               // API v1 dengan gemini-pro
+        'v1beta/models/gemini-1.5-pro',       // Alternatif dengan 1.5-pro
+        'v1beta/models/gemini-1.5-flash'      // Alternatif dengan 1.5-flash
+    ];
 
     // Prompt ini memberikan 'kepribadian' dan konteks pada Nareta saat bertanya ke Gemini
     $prompt = "Kamu adalah Nareta, asisten AI dari rnara.id yang sangat ramah, membantu, dan cerdas. Jawab pertanyaan berikut menggunakan bahasa Indonesia yang natural, jelas, dan jika memungkinkan, berikan jawaban dalam format yang mudah dibaca (misalnya dengan poin-poin jika perlu). Pertanyaannya adalah: \"" . $question . "\"";
@@ -32,65 +37,46 @@ function askGemini($question, $apiKey) {
     ];
     $jsonData = json_encode($data);
 
-    // Menggunakan cURL untuk melakukan request ke API
-    $ch = curl_init($apiUrl);
-    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
-    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-    curl_setopt($ch, CURLOPT_POST, 1);
-    // Tambahkan timeout untuk mencegah script menunggu terlalu lama
-    curl_setopt($ch, CURLOPT_TIMEOUT, 30); 
+    // Mencoba setiap model sampai berhasil
+    foreach ($models as $model) {
+        $apiUrl = 'https://generativelanguage.googleapis.com/' . $model . ':generateContent?key=' . $apiKey;
 
-    $response = curl_exec($ch);
-    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-    $error = curl_error($ch);
-    curl_close($ch);
+        // Menggunakan cURL untuk melakukan request ke API
+        $ch = curl_init($apiUrl);
+        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
+        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+        curl_setopt($ch, CURLOPT_POST, 1);
+        curl_setopt($ch, CURLOPT_TIMEOUT, 30); 
 
-    // Penanganan jika terjadi error koneksi
-    if ($error) {
-        return "Maaf, terjadi sedikit gangguan saat mencoba terhubung ke AI. Error: " . $error;
-    }
+        $response = curl_exec($ch);
+        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+        $error = curl_error($ch);
+        curl_close($ch);
 
-    // Cek HTTP status code
-    if ($httpCode !== 200) {
-        $result = json_decode($response, true);
-        $errorMessage = 'Unknown error';
-        
-        if (isset($result['error'])) {
-            $errorMessage = $result['error']['message'] ?? 'Unknown error';
-            if (isset($result['error']['status'])) {
-                $errorMessage .= ' (Status: ' . $result['error']['status'] . ')';
+        // Penanganan jika terjadi error koneksi
+        if ($error) {
+            continue; // Coba model berikutnya
+        }
+
+        // Jika berhasil (HTTP 200), proses response
+        if ($httpCode === 200) {
+            $result = json_decode($response, true);
+
+            // Cek jika response adalah error dari API
+            if (isset($result['error'])) {
+                continue; // Coba model berikutnya
+            }
+
+            // Mengekstrak teks jawaban dari respons JSON Gemini yang kompleks
+            if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
+                return $result['candidates'][0]['content']['parts'][0]['text'];
             }
         }
-        
-        return "Maaf, terjadi kesalahan saat menghubungi AI. HTTP Code: " . $httpCode . ". Error: " . $errorMessage;
     }
 
-    $result = json_decode($response, true);
-
-    // Cek jika response adalah error dari API
-    if (isset($result['error'])) {
-        $errorMessage = $result['error']['message'] ?? 'Unknown error';
-        return "Maaf, terjadi kesalahan: " . $errorMessage . ". Silakan coba lagi nanti.";
-    }
-
-    // Mengekstrak teks jawaban dari respons JSON Gemini yang kompleks
-    if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
-        return $result['candidates'][0]['content']['parts'][0]['text'];
-    } else {
-        // Untuk debugging - tampilkan response untuk melihat strukturnya
-        // Hapus bagian ini setelah masalah teratasi
-        $debugInfo = "Response structure tidak sesuai. ";
-        if (empty($result)) {
-            $debugInfo .= "Response kosong atau null.";
-        } else {
-            $debugInfo .= "Keys: " . implode(', ', array_keys($result));
-            if (isset($result['candidates'])) {
-                $debugInfo .= " | Candidates count: " . count($result['candidates']);
-            }
-        }
-        return "Maaf, saat ini saya tidak bisa menjawab. " . $debugInfo . " Coba tanyakan hal lain ya.";
-    }
+    // Jika semua model gagal, kembalikan error
+    return "Maaf, saat ini saya tidak bisa menjawab. Semua model yang tersedia tidak dapat diakses. Silakan coba lagi nanti atau hubungi administrator.";
 }
 
 
