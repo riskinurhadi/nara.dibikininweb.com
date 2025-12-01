@@ -207,33 +207,64 @@
         /* --- Style untuk Blok Kode --- */
 .code-block {
     position: relative;
-    background-color: #f6f8fa;
-    border: 1px solid #e1e4e8;
+    background-color: #1e1e1e;
+    border: 1px solid #3c3c3c;
     border-radius: 8px;
-    padding: 15px;
-    margin-top: 10px;
-    overflow-x: auto;
+    padding: 0;
+    margin: 15px 0;
+    overflow: hidden;
     font-family: 'Courier New', Courier, monospace;
     font-size: 0.9em;
-    color: #24292e;
+    color: #d4d4d4;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
 }
 .code-block code {
-    white-space: pre-wrap; /* Memastikan teks tidak meluber keluar dari box */
+    display: block;
+    padding: 15px;
+    white-space: pre;
+    overflow-x: auto;
+    color: #d4d4d4;
+    line-height: 1.5;
+    font-size: 0.9em;
+}
+.code-lang {
+    background-color: #2d2d2d;
+    color: #858585;
+    padding: 8px 15px;
+    font-size: 0.75em;
+    text-transform: uppercase;
+    border-bottom: 1px solid #3c3c3c;
+    font-weight: 600;
+}
+.inline-code {
+    background-color: rgba(110, 118, 129, 0.2);
+    color: #e06c75;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Courier New', Courier, monospace;
+    font-size: 0.9em;
 }
 .copy-button {
     position: absolute;
-    top: 5px;
-    right: 5px;
-    background-color: #e1e4e8;
-    border: none;
+    top: 8px;
+    right: 8px;
+    background-color: #2d2d2d;
+    border: 1px solid #3c3c3c;
     border-radius: 5px;
-    padding: 5px 10px;
+    padding: 6px 12px;
     cursor: pointer;
-    font-size: 0.8em;
-    color: #586069;
+    font-size: 0.85em;
+    color: #858585;
+    transition: all 0.2s ease;
+    z-index: 10;
 }
 .copy-button:hover {
-    background-color: #d1d5da;
+    background-color: #3c3c3c;
+    color: #d4d4d4;
+    border-color: #4c4c4c;
+}
+.copy-button i {
+    font-size: 0.9em;
 }
 /* Style untuk Markdown List */
 .message ul {
@@ -358,11 +389,19 @@
 
     // === Fungsi untuk memproses teks dengan Regex ===
     function processMarkdown(text) {
-        // Blok kode (dikelilingi oleh ```)
-        const codeBlockRegex = /```([\s\S]*?)```/g;
-        text = text.replace(codeBlockRegex, (match, code) => {
+        // Blok kode (dikelilingi oleh ```) - dengan atau tanpa language identifier
+        const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
+        text = text.replace(codeBlockRegex, (match, lang, code) => {
             const pre = document.createElement('pre');
             pre.className = 'code-block';
+            
+            // Tambahkan label bahasa jika ada
+            if (lang) {
+                const langLabel = document.createElement('div');
+                langLabel.className = 'code-lang';
+                langLabel.textContent = lang.toUpperCase();
+                pre.appendChild(langLabel);
+            }
             
             const codeEl = document.createElement('code');
             codeEl.textContent = code.trim();
@@ -371,28 +410,39 @@
             const copyButton = document.createElement('button');
             copyButton.className = 'copy-button';
             copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+            copyButton.title = 'Copy code';
+            const codeToCopy = code.trim();
             copyButton.onclick = () => {
-                navigator.clipboard.writeText(code.trim());
-                copyButton.innerHTML = '<i class="fas fa-check"></i>';
-                setTimeout(() => {
-                    copyButton.innerHTML = '<i class="fas fa-copy"></i>';
-                }, 2000);
+                navigator.clipboard.writeText(codeToCopy).then(() => {
+                    copyButton.innerHTML = '<i class="fas fa-check"></i>';
+                    copyButton.style.color = '#4ec9b0';
+                    setTimeout(() => {
+                        copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+                        copyButton.style.color = '';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                });
             };
             pre.appendChild(copyButton);
 
             return pre.outerHTML;
         });
 
+        // Deteksi kode inline (dikelilingi oleh `) - tapi skip jika sudah dalam code block
+        const inlineCodeRegex = /(?<!<code[^>]*>)`([^`\n]+)`(?!<\/code>)/g;
+        text = text.replace(inlineCodeRegex, '<code class="inline-code">$1</code>');
+
         // Daftar (diawali dengan *, -, atau angka)
         const listRegex = /(\* |\- |\d+\. ).*/g;
         text = text.replace(listRegex, '<ul>$&</ul>'); // Tambahkan tag <ul>
 
-        // Bold (teks di antara **)
-        const boldRegex = /\*\*(.*?)\*\*/g;
+        // Bold (teks di antara **) - skip jika dalam code block
+        const boldRegex = /(?<!<code[^>]*>)\*\*(.*?)\*\*(?!<\/code>)/g;
         text = text.replace(boldRegex, '<strong>$1</strong>');
 
-        // Italic (teks di antara *)
-        const italicRegex = /\*(.*?)\*/g;
+        // Italic (teks di antara *) - skip jika dalam code block atau sudah diproses sebagai bold
+        const italicRegex = /(?<!<code[^>]*>)(?<!\*)\*([^*\n]+?)\*(?!\*)(?!<\/code>)/g;
         text = text.replace(italicRegex, '<em>$1</em>');
         
         return text;
