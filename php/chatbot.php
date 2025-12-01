@@ -41,22 +41,54 @@ function askGemini($question, $apiKey) {
     curl_setopt($ch, CURLOPT_TIMEOUT, 30); 
 
     $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     $error = curl_error($ch);
     curl_close($ch);
 
     // Penanganan jika terjadi error koneksi
     if ($error) {
-        return "Maaf, terjadi sedikit gangguan saat mencoba terhubung ke AI. Silakan coba lagi nanti.";
+        return "Maaf, terjadi sedikit gangguan saat mencoba terhubung ke AI. Error: " . $error;
     }
 
-    $result = json_decode($response);
+    // Cek HTTP status code
+    if ($httpCode !== 200) {
+        $result = json_decode($response, true);
+        $errorMessage = 'Unknown error';
+        
+        if (isset($result['error'])) {
+            $errorMessage = $result['error']['message'] ?? 'Unknown error';
+            if (isset($result['error']['status'])) {
+                $errorMessage .= ' (Status: ' . $result['error']['status'] . ')';
+            }
+        }
+        
+        return "Maaf, terjadi kesalahan saat menghubungi AI. HTTP Code: " . $httpCode . ". Error: " . $errorMessage;
+    }
+
+    $result = json_decode($response, true);
+
+    // Cek jika response adalah error dari API
+    if (isset($result['error'])) {
+        $errorMessage = $result['error']['message'] ?? 'Unknown error';
+        return "Maaf, terjadi kesalahan: " . $errorMessage . ". Silakan coba lagi nanti.";
+    }
 
     // Mengekstrak teks jawaban dari respons JSON Gemini yang kompleks
-    if (isset($result->candidates[0]->content->parts[0]->text)) {
-        return $result->candidates[0]->content->parts[0]->text;
+    if (isset($result['candidates'][0]['content']['parts'][0]['text'])) {
+        return $result['candidates'][0]['content']['parts'][0]['text'];
     } else {
-        // Penanganan jika API mengembalikan error (misal: pertanyaan tidak aman, dll)
-        return "Maaf, saat ini saya tidak bisa menjawab. Mungkin ada kata kunci yang melanggar kebijakan keamanan atau limit harian API habis. Coba tanyakan hal lain ya.";
+        // Untuk debugging - tampilkan response untuk melihat strukturnya
+        // Hapus bagian ini setelah masalah teratasi
+        $debugInfo = "Response structure tidak sesuai. ";
+        if (empty($result)) {
+            $debugInfo .= "Response kosong atau null.";
+        } else {
+            $debugInfo .= "Keys: " . implode(', ', array_keys($result));
+            if (isset($result['candidates'])) {
+                $debugInfo .= " | Candidates count: " . count($result['candidates']);
+            }
+        }
+        return "Maaf, saat ini saya tidak bisa menjawab. " . $debugInfo . " Coba tanyakan hal lain ya.";
     }
 }
 
