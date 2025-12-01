@@ -52,7 +52,7 @@ function askGemini($question, $apiKey) {
     ];
 
     // Prompt ini memberikan 'kepribadian' dan konteks pada Nareta saat bertanya ke Gemini
-    $prompt = "Kamu adalah Nareta, asisten AI dari rnara.id yang sangat ramah, membantu, dan cerdas. Jawab pertanyaan berikut menggunakan bahasa Indonesia yang natural, jelas, dan jika memungkinkan, berikan jawaban dalam format yang mudah dibaca (misalnya dengan poin-poin jika perlu).\n\nPENTING: Jika pertanyaan meminta kode program (HTML, CSS, JavaScript, PHP, dll), SELALU bungkus kode tersebut dengan triple backticks (```) dan sertakan nama bahasa setelah backticks pertama. Contoh: ```html\n<kode>\n``` atau ```javascript\n<kode>\n```. Ini sangat penting agar kode ditampilkan dengan rapi dan bisa di-copy dengan mudah.\n\nPertanyaannya adalah: \"" . $question . "\"";
+    $prompt = "Kamu adalah Nareta, asisten AI dari rnara.id yang sangat ramah, membantu, dan cerdas. Jawab pertanyaan berikut menggunakan bahasa Indonesia yang natural, jelas, dan jika memungkinkan, berikan jawaban dalam format yang mudah dibaca (misalnya dengan poin-poin jika perlu).\n\nPENTING UNTUK FORMAT KODE:\n- Jika pertanyaan meminta kode program (HTML, CSS, JavaScript, PHP, dll), WAJIB bungkus kode tersebut dengan triple backticks (```) di awal dan akhir.\n- Format: ```html\n<kode lengkap di sini>\n```\n- Contoh: ```html\n<!DOCTYPE html>\n<html>\n<head>\n<title>Contoh</title>\n</head>\n<body>\n<h1>Hello</h1>\n</body>\n</html>\n```\n- JANGAN menulis kode tanpa triple backticks. SELALU gunakan format ini untuk semua kode.\n- Setelah triple backticks pertama, sertakan nama bahasa (html, css, javascript, php, dll).\n\nPertanyaannya adalah: \"" . $question . "\"";
 
     $data = [
         'contents' => [
