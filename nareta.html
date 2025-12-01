@@ -207,64 +207,33 @@
         /* --- Style untuk Blok Kode --- */
 .code-block {
     position: relative;
-    background-color: #1e1e1e;
-    border: 1px solid #3c3c3c;
+    background-color: #f6f8fa;
+    border: 1px solid #e1e4e8;
     border-radius: 8px;
-    padding: 0;
-    margin: 15px 0;
-    overflow: hidden;
+    padding: 15px;
+    margin-top: 10px;
+    overflow-x: auto;
     font-family: 'Courier New', Courier, monospace;
     font-size: 0.9em;
-    color: #d4d4d4;
-    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+    color: #24292e;
 }
 .code-block code {
-    display: block;
-    padding: 15px;
-    white-space: pre;
-    overflow-x: auto;
-    color: #d4d4d4;
-    line-height: 1.5;
-    font-size: 0.9em;
-}
-.code-lang {
-    background-color: #2d2d2d;
-    color: #858585;
-    padding: 8px 15px;
-    font-size: 0.75em;
-    text-transform: uppercase;
-    border-bottom: 1px solid #3c3c3c;
-    font-weight: 600;
-}
-.inline-code {
-    background-color: rgba(110, 118, 129, 0.2);
-    color: #e06c75;
-    padding: 2px 6px;
-    border-radius: 3px;
-    font-family: 'Courier New', Courier, monospace;
-    font-size: 0.9em;
+    white-space: pre-wrap; /* Memastikan teks tidak meluber keluar dari box */
 }
 .copy-button {
     position: absolute;
-    top: 8px;
-    right: 8px;
-    background-color: #2d2d2d;
-    border: 1px solid #3c3c3c;
+    top: 5px;
+    right: 5px;
+    background-color: #e1e4e8;
+    border: none;
     border-radius: 5px;
-    padding: 6px 12px;
+    padding: 5px 10px;
     cursor: pointer;
-    font-size: 0.85em;
-    color: #858585;
-    transition: all 0.2s ease;
-    z-index: 10;
+    font-size: 0.8em;
+    color: #586069;
 }
 .copy-button:hover {
-    background-color: #3c3c3c;
-    color: #d4d4d4;
-    border-color: #4c4c4c;
-}
-.copy-button i {
-    font-size: 0.9em;
+    background-color: #d1d5da;
 }
 /* Style untuk Markdown List */
 .message ul {
@@ -387,161 +356,43 @@
         }
     }
 
-    // === Fungsi untuk membuat code block element ===
-    function createCodeBlock(code, lang = null) {
-        const pre = document.createElement('pre');
-        pre.className = 'code-block';
-        
-        // Tambahkan label bahasa jika ada
-        if (lang) {
-            const langLabel = document.createElement('div');
-            langLabel.className = 'code-lang';
-            langLabel.textContent = lang.toUpperCase();
-            pre.appendChild(langLabel);
-        }
-        
-        const codeEl = document.createElement('code');
-        codeEl.textContent = code.trim();
-        pre.appendChild(codeEl);
-        
-        const copyButton = document.createElement('button');
-        copyButton.className = 'copy-button';
-        copyButton.innerHTML = '<i class="fas fa-copy"></i>';
-        copyButton.title = 'Copy code';
-        const codeToCopy = code.trim();
-        copyButton.onclick = () => {
-            navigator.clipboard.writeText(codeToCopy).then(() => {
-                copyButton.innerHTML = '<i class="fas fa-check"></i>';
-                copyButton.style.color = '#4ec9b0';
-                setTimeout(() => {
-                    copyButton.innerHTML = '<i class="fas fa-copy"></i>';
-                    copyButton.style.color = '';
-                }, 2000);
-            }).catch(err => {
-                console.error('Failed to copy:', err);
-            });
-        };
-        pre.appendChild(copyButton);
-
-        return pre.outerHTML;
-    }
-
-    // === Fungsi untuk mendeteksi dan memformat blok kode ===
-    function detectAndFormatCodeBlocks(text) {
-        // Deteksi blok HTML lengkap
-        const htmlBlockRegex = /(<!DOCTYPE[\s\S]*?<\/html>|<!DOCTYPE[\s\S]*?<\/head>|<!DOCTYPE[\s\S]*?<\/body>|<html[\s\S]*?<\/html>|<head[\s\S]*?<\/head>|<body[\s\S]*?<\/body>)/gi;
-        
-        // Deteksi tag HTML dengan konten (minimal 3 baris)
-        const htmlTagRegex = /(<(?:div|nav|ul|section|article|header|footer)[^>]*>[\s\S]{50,}?<\/\w+>)/gi;
-        
-        // Deteksi script/style blocks
-        const scriptStyleRegex = /(<(?:script|style)[^>]*>[\s\S]*?<\/\w+>)/gi;
-        
-        // Deteksi CSS blocks - lebih komprehensif
-        // Pola 1: CSS dengan selector diikuti { } (contoh: * { }, body { }, .navbar { })
-        const cssSelectorRegex = /((?:\*|body|html|\.\w+|#\w+|\w+)\s*\{[^}]{10,}?\}(?:\s*(?:\*|body|html|\.\w+|#\w+|\w+)\s*\{[^}]{10,}?\})*)/g;
-        
-        // Pola 2: CSS dengan komentar dan properti
-        const cssWithCommentsRegex = /(\/\*[\s\S]*?\*\/\s*(?:\*|body|html|\.\w+|#\w+|\w+)\s*\{[^}]{10,}?\}(?:\s*(?:\/\*[\s\S]*?\*\/\s*)?(?:\*|body|html|\.\w+|#\w+|\w+)\s*\{[^}]{10,}?\})*)/g;
-        
-        // Pola 3: Blok CSS yang dimulai dengan { dan berisi properti CSS
-        const cssBlockRegex = /(\{[^}]{20,}\}(?:\s*\{[^}]{20,}\}){1,})/g;
-        
-        // Deteksi JavaScript/PHP functions (minimal beberapa baris)
-        const jsBlockRegex = /((?:function|const|let|var|class|interface)\s+[\s\S]{50,}?(?=\n\n|\n\*\*|$|<\/pre>))/g;
-        
-        // Gabungkan semua pola
-        const patterns = [
-            { regex: htmlBlockRegex, lang: 'html' },
-            { regex: scriptStyleRegex, lang: 'html' },
-            { regex: htmlTagRegex, lang: 'html' },
-            { regex: cssWithCommentsRegex, lang: 'css' },
-            { regex: cssSelectorRegex, lang: 'css' },
-            { regex: cssBlockRegex, lang: 'css' },
-            { regex: jsBlockRegex, lang: 'javascript' }
-        ];
-
-        // Proses setiap pola
-        patterns.forEach(({ regex, lang }) => {
-            let match;
-            const matches = [];
-            
-            // Reset regex
-            regex.lastIndex = 0;
-            
-            while ((match = regex.exec(text)) !== null) {
-                // Skip jika sudah dalam code block
-                const beforeMatch = text.substring(Math.max(0, match.index - 50), match.index);
-                const afterMatch = text.substring(match.index + match[0].length, match.index + match[0].length + 50);
-                
-                if (!beforeMatch.includes('<pre') && !afterMatch.includes('</pre>') && 
-                    !beforeMatch.includes('```') && !afterMatch.includes('```')) {
-                    matches.push({
-                        text: match[0],
-                        index: match.index,
-                        lang: lang
-                    });
-                }
-            }
-            
-            // Replace dari belakang ke depan untuk menjaga index
-            matches.reverse().forEach(({ text: codeText, index, lang: codeLang }) => {
-                const codeBlock = createCodeBlock(codeText, codeLang);
-                text = text.substring(0, index) + codeBlock + text.substring(index + codeText.length);
-            });
-        });
-
-        return text;
-    }
-
     // === Fungsi untuk memproses teks dengan Regex ===
     function processMarkdown(text) {
-        // 1. Blok kode (dikelilingi oleh ```) - dengan atau tanpa language identifier
-        const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
-        text = text.replace(codeBlockRegex, (match, lang, code) => {
-            return createCodeBlock(code, lang);
+        // Blok kode (dikelilingi oleh ```)
+        const codeBlockRegex = /```([\s\S]*?)```/g;
+        text = text.replace(codeBlockRegex, (match, code) => {
+            const pre = document.createElement('pre');
+            pre.className = 'code-block';
+            
+            const codeEl = document.createElement('code');
+            codeEl.textContent = code.trim();
+            pre.appendChild(codeEl);
+            
+            const copyButton = document.createElement('button');
+            copyButton.className = 'copy-button';
+            copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+            copyButton.onclick = () => {
+                navigator.clipboard.writeText(code.trim());
+                copyButton.innerHTML = '<i class="fas fa-check"></i>';
+                setTimeout(() => {
+                    copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+                }, 2000);
+            };
+            pre.appendChild(copyButton);
+
+            return pre.outerHTML;
         });
 
-        // 2. Deteksi dan format blok kode yang tidak dibungkus dengan ```
-        text = detectAndFormatCodeBlocks(text);
-        
-        // 3. Deteksi CSS yang mungkin terlewat (pendekatan lebih agresif)
-        // Cari pola CSS yang dimulai dengan selector atau komentar dan berlanjut beberapa baris
-        const cssPattern = /((?:\/\*[\s\S]*?\*\/\s*)?(?:\*|body|html|\.[\w-]+|#[\w-]+|\w+)\s*\{[^}]{10,}?\}(?:\s*(?:\/\*[\s\S]*?\*\/\s*)?(?:\*|body|html|\.[\w-]+|#[\w-]+|\w+)\s*\{[^}]{10,}?\}){0,})/g;
-        
-        let cssMatch;
-        const cssMatches = [];
-        while ((cssMatch = cssPattern.exec(text)) !== null) {
-            // Skip jika sudah dalam code block
-            const beforeMatch = text.substring(Math.max(0, cssMatch.index - 50), cssMatch.index);
-            if (!beforeMatch.includes('<pre') && !beforeMatch.includes('```')) {
-                cssMatches.push({
-                    text: cssMatch[0],
-                    index: cssMatch.index
-                });
-            }
-        }
-        
-        // Replace dari belakang ke depan
-        cssMatches.reverse().forEach(({ text: cssText, index }) => {
-            const codeBlock = createCodeBlock(cssText, 'css');
-            text = text.substring(0, index) + codeBlock + text.substring(index + cssText.length);
-        });
-
-        // 3. Deteksi kode inline (dikelilingi oleh `) - tapi skip jika sudah dalam code block
-        const inlineCodeRegex = /(?<!<code[^>]*>)`([^`\n]+)`(?!<\/code>)/g;
-        text = text.replace(inlineCodeRegex, '<code class="inline-code">$1</code>');
-
-        // 4. Daftar (diawali dengan *, -, atau angka)
+        // Daftar (diawali dengan *, -, atau angka)
         const listRegex = /(\* |\- |\d+\. ).*/g;
-        text = text.replace(listRegex, '<ul>$&</ul>');
+        text = text.replace(listRegex, '<ul>$&</ul>'); // Tambahkan tag <ul>
 
-        // 5. Bold (teks di antara **) - skip jika dalam code block
-        const boldRegex = /(?<!<code[^>]*>)\*\*(.*?)\*\*(?!<\/code>)/g;
+        // Bold (teks di antara **)
+        const boldRegex = /\*\*(.*?)\*\*/g;
         text = text.replace(boldRegex, '<strong>$1</strong>');
 
-        // 6. Italic (teks di antara *) - skip jika dalam code block atau sudah diproses sebagai bold
-        const italicRegex = /(?<!<code[^>]*>)(?<!\*)\*([^*\n]+?)\*(?!\*)(?!<\/code>)/g;
+        // Italic (teks di antara *)
+        const italicRegex = /\*(.*?)\*/g;
         text = text.replace(italicRegex, '<em>$1</em>');
         
         return text;
