@@ -358,11 +358,19 @@
 
     // === Fungsi untuk memproses teks dengan Regex ===
     function processMarkdown(text) {
-        // Blok kode (dikelilingi oleh ```)
-        const codeBlockRegex = /```([\s\S]*?)```/g;
-        text = text.replace(codeBlockRegex, (match, code) => {
+        // 1. Blok kode (dikelilingi oleh ```) - proses terlebih dahulu
+        const codeBlockRegex = /```(\w+)?\n?([\s\S]*?)```/g;
+        text = text.replace(codeBlockRegex, (match, lang, code) => {
             const pre = document.createElement('pre');
             pre.className = 'code-block';
+            
+            // Tambahkan label bahasa jika ada
+            if (lang) {
+                const langLabel = document.createElement('div');
+                langLabel.className = 'code-lang';
+                langLabel.textContent = lang.toUpperCase();
+                pre.appendChild(langLabel);
+            }
             
             const codeEl = document.createElement('code');
             codeEl.textContent = code.trim();
@@ -371,29 +379,42 @@
             const copyButton = document.createElement('button');
             copyButton.className = 'copy-button';
             copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+            copyButton.title = 'Copy code';
+            const codeToCopy = code.trim();
             copyButton.onclick = () => {
-                navigator.clipboard.writeText(code.trim());
-                copyButton.innerHTML = '<i class="fas fa-check"></i>';
-                setTimeout(() => {
-                    copyButton.innerHTML = '<i class="fas fa-copy"></i>';
-                }, 2000);
+                navigator.clipboard.writeText(codeToCopy).then(() => {
+                    copyButton.innerHTML = '<i class="fas fa-check"></i>';
+                    copyButton.style.color = '#4ec9b0';
+                    setTimeout(() => {
+                        copyButton.innerHTML = '<i class="fas fa-copy"></i>';
+                        copyButton.style.color = '';
+                    }, 2000);
+                }).catch(err => {
+                    console.error('Failed to copy:', err);
+                });
             };
             pre.appendChild(copyButton);
 
             return pre.outerHTML;
         });
 
-        // Daftar (diawali dengan *, -, atau angka)
-        const listRegex = /(\* |\- |\d+\. ).*/g;
-        text = text.replace(listRegex, '<ul>$&</ul>'); // Tambahkan tag <ul>
+        // 2. Deteksi kode inline (dikelilingi oleh `) - sebelum bold/italic
+        const inlineCodeRegex = /`([^`\n]+)`/g;
+        text = text.replace(inlineCodeRegex, '<code class="inline-code">$1</code>');
 
-        // Bold (teks di antara **)
-        const boldRegex = /\*\*(.*?)\*\*/g;
+        // 3. Bold (teks di antara **) - sederhana dan bersih
+        // Hanya tangkap teks yang tidak mengandung tanda petik atau backtick
+        const boldRegex = /\*\*([^*`']+?)\*\*/g;
         text = text.replace(boldRegex, '<strong>$1</strong>');
 
-        // Italic (teks di antara *)
-        const italicRegex = /\*(.*?)\*/g;
+        // 4. Italic (teks di antara *) - skip jika sudah dalam code block, inline code, atau sudah diproses sebagai bold
+        // Hanya proses jika tidak ada ** di sekitarnya dan tidak dalam code block
+        const italicRegex = /(?<!<code[^>]*>)(?<!\*)\*([^*\n`]+?)\*(?!\*)(?!<\/code>)/g;
         text = text.replace(italicRegex, '<em>$1</em>');
+
+        // 5. Daftar (diawali dengan *, -, atau angka)
+        const listRegex = /(\* |\- |\d+\. ).*/g;
+        text = text.replace(listRegex, '<ul>$&</ul>');
         
         return text;
     }
