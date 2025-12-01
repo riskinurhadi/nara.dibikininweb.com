@@ -7,6 +7,30 @@ header('Content-Type: application/json');
 // ===================================================================
 // LANGKAH 1: FUNGSI UNTUK MENGHUBUNGI GEMINI API
 // ===================================================================
+
+/**
+ * Fungsi helper untuk melakukan request ke Gemini API
+ */
+function callGeminiAPI($apiUrl, $jsonData) {
+    $ch = curl_init($apiUrl);
+    curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_POST, 1);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 30);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    $error = curl_error($ch);
+    curl_close($ch);
+    
+    return [
+        'response' => $response,
+        'httpCode' => $httpCode,
+        'error' => $error
+    ];
+}
+
 /**
  * Mengirim pertanyaan ke Google Gemini API dan mengembalikan jawabannya.
  *
@@ -16,11 +40,15 @@ header('Content-Type: application/json');
  */
 function askGemini($question, $apiKey) {
     // Daftar model yang akan dicoba secara berurutan
+    // Mencoba berbagai model yang mungkin tersedia
     $models = [
-        'v1beta/models/gemini-pro',           // Model paling umum dan stabil
-        'v1/models/gemini-pro',               // API v1 dengan gemini-pro
-        'v1beta/models/gemini-1.5-pro',       // Alternatif dengan 1.5-pro
-        'v1beta/models/gemini-1.5-flash'      // Alternatif dengan 1.5-flash
+        'v1beta/models/gemini-2.5-flash',        // Model Gemini 2.5 Flash (paling mungkin tersedia)
+        'v1beta/models/gemini-2.0-flash-exp',    // Model Gemini 2.0 experimental
+        'v1beta/models/gemini-3-pro-preview',     // Model Gemini 3 Pro preview
+        'v1beta/models/gemini-1.5-pro-latest',   // Model 1.5 Pro latest
+        'v1beta/models/gemini-1.5-flash-latest',  // Model 1.5 Flash latest
+        'v1/models/gemini-1.5-pro-latest',       // API v1 dengan 1.5 Pro
+        'v1/models/gemini-1.5-flash-latest'       // API v1 dengan 1.5 Flash
     ];
 
     // Prompt ini memberikan 'kepribadian' dan konteks pada Nareta saat bertanya ke Gemini
@@ -42,18 +70,11 @@ function askGemini($question, $apiKey) {
     foreach ($models as $model) {
         $apiUrl = 'https://generativelanguage.googleapis.com/' . $model . ':generateContent?key=' . $apiKey;
 
-        // Menggunakan cURL untuk melakukan request ke API
-        $ch = curl_init($apiUrl);
-        curl_setopt($ch, CURLOPT_HTTPHEADER, ['Content-Type: application/json']);
-        curl_setopt($ch, CURLOPT_POSTFIELDS, $jsonData);
-        curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
-        curl_setopt($ch, CURLOPT_POST, 1);
-        curl_setopt($ch, CURLOPT_TIMEOUT, 30); 
-
-        $response = curl_exec($ch);
-        $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
-        $error = curl_error($ch);
-        curl_close($ch);
+        // Menggunakan fungsi helper untuk melakukan request
+        $apiResult = callGeminiAPI($apiUrl, $jsonData);
+        $response = $apiResult['response'];
+        $httpCode = $apiResult['httpCode'];
+        $error = $apiResult['error'];
 
         // Penanganan jika terjadi error koneksi
         if ($error) {
