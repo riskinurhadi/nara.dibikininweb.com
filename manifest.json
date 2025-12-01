@@ -1,0 +1,41 @@
+{
+  "name": "Nareta - AI Assistant",
+  "short_name": "Nareta",
+  "description": "Asisten AI dari rnara.id yang siap membantu Anda",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1e3a8a",
+  "theme_color": "#0ea5e9",
+  "orientation": "portrait-primary",
+  "icons": [
+    {
+      "src": "img/nareta.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "img/nareta.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "categories": ["productivity", "utilities"],
+  "screenshots": [],
+  "shortcuts": [
+    {
+      "name": "Chat dengan Nareta",
+      "short_name": "Chat",
+      "description": "Mulai chat dengan Nareta",
+      "url": "/",
+      "icons": [
+        {
+          "src": "img/nareta.png",
+          "sizes": "96x96"
+        }
+      ]
+    }
+  ]
+}
+
