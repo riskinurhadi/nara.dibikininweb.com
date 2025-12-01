@@ -437,8 +437,15 @@
         // Deteksi script/style blocks
         const scriptStyleRegex = /(<(?:script|style)[^>]*>[\s\S]*?<\/\w+>)/gi;
         
-        // Deteksi CSS blocks (minimal beberapa baris dengan {})
-        const cssBlockRegex = /(\{[^}]{20,}\}(?:\s*\{[^}]{20,}\}){2,})/g;
+        // Deteksi CSS blocks - lebih komprehensif
+        // Pola 1: CSS dengan selector diikuti { } (contoh: * { }, body { }, .navbar { })
+        const cssSelectorRegex = /((?:\*|body|html|\.\w+|#\w+|\w+)\s*\{[^}]{10,}?\}(?:\s*(?:\*|body|html|\.\w+|#\w+|\w+)\s*\{[^}]{10,}?\})*)/g;
+        
+        // Pola 2: CSS dengan komentar dan properti
+        const cssWithCommentsRegex = /(\/\*[\s\S]*?\*\/\s*(?:\*|body|html|\.\w+|#\w+|\w+)\s*\{[^}]{10,}?\}(?:\s*(?:\/\*[\s\S]*?\*\/\s*)?(?:\*|body|html|\.\w+|#\w+|\w+)\s*\{[^}]{10,}?\})*)/g;
+        
+        // Pola 3: Blok CSS yang dimulai dengan { dan berisi properti CSS
+        const cssBlockRegex = /(\{[^}]{20,}\}(?:\s*\{[^}]{20,}\}){1,})/g;
         
         // Deteksi JavaScript/PHP functions (minimal beberapa baris)
         const jsBlockRegex = /((?:function|const|let|var|class|interface)\s+[\s\S]{50,}?(?=\n\n|\n\*\*|$|<\/pre>))/g;
@@ -448,6 +455,8 @@
             { regex: htmlBlockRegex, lang: 'html' },
             { regex: scriptStyleRegex, lang: 'html' },
             { regex: htmlTagRegex, lang: 'html' },
+            { regex: cssWithCommentsRegex, lang: 'css' },
+            { regex: cssSelectorRegex, lang: 'css' },
             { regex: cssBlockRegex, lang: 'css' },
             { regex: jsBlockRegex, lang: 'javascript' }
         ];
@@ -465,7 +474,8 @@
                 const beforeMatch = text.substring(Math.max(0, match.index - 50), match.index);
                 const afterMatch = text.substring(match.index + match[0].length, match.index + match[0].length + 50);
                 
-                if (!beforeMatch.includes('<pre') && !afterMatch.includes('</pre>')) {
+                if (!beforeMatch.includes('<pre') && !afterMatch.includes('</pre>') && 
+                    !beforeMatch.includes('```') && !afterMatch.includes('```')) {
                     matches.push({
                         text: match[0],
                         index: match.index,
@@ -494,6 +504,29 @@
 
         // 2. Deteksi dan format blok kode yang tidak dibungkus dengan ```
         text = detectAndFormatCodeBlocks(text);
+        
+        // 3. Deteksi CSS yang mungkin terlewat (pendekatan lebih agresif)
+        // Cari pola CSS yang dimulai dengan selector atau komentar dan berlanjut beberapa baris
+        const cssPattern = /((?:\/\*[\s\S]*?\*\/\s*)?(?:\*|body|html|\.[\w-]+|#[\w-]+|\w+)\s*\{[^}]{10,}?\}(?:\s*(?:\/\*[\s\S]*?\*\/\s*)?(?:\*|body|html|\.[\w-]+|#[\w-]+|\w+)\s*\{[^}]{10,}?\}){0,})/g;
+        
+        let cssMatch;
+        const cssMatches = [];
+        while ((cssMatch = cssPattern.exec(text)) !== null) {
+            // Skip jika sudah dalam code block
+            const beforeMatch = text.substring(Math.max(0, cssMatch.index - 50), cssMatch.index);
+            if (!beforeMatch.includes('<pre') && !beforeMatch.includes('```')) {
+                cssMatches.push({
+                    text: cssMatch[0],
+                    index: cssMatch.index
+                });
+            }
+        }
+        
+        // Replace dari belakang ke depan
+        cssMatches.reverse().forEach(({ text: cssText, index }) => {
+            const codeBlock = createCodeBlock(cssText, 'css');
+            text = text.substring(0, index) + codeBlock + text.substring(index + cssText.length);
+        });
 
         // 3. Deteksi kode inline (dikelilingi oleh `) - tapi skip jika sudah dalam code block
         const inlineCodeRegex = /(?<!<code[^>]*>)`([^`\n]+)`(?!<\/code>)/g;
